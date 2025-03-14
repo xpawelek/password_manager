@@ -1,8 +1,4 @@
-# ---------------------------- PASSWORD GENERATOR ------------------------------- #
 import tkinter.messagebox
-# ---------------------------- SAVE PASSWORD ------------------------------- #
-
-# ---------------------------- UI SETUP ------------------------------- #
 
 from tkinter import *
 import random
@@ -10,8 +6,28 @@ import string
 import pyperclip
 import json
 import os
+from tkinter import simpledialog
 
-my_email = 'paul.trzupek@gmail.com'
+EMAIL_FILE = "email.json"
+
+def save_email(email):
+    with open(EMAIL_FILE, "w") as file:
+        json.dump({"email": email}, file, indent=4)
+def load_email():
+    if os.path.exists(EMAIL_FILE):
+        try:
+            with open(EMAIL_FILE, "r") as file:
+                data = json.load(file)
+                user_email = data.get("email")
+        except:
+            root = Tk()
+            root.withdraw()
+            user_email = simpledialog.askstring("Input email!", "Please enter your email: ")
+            if user_email:
+                save_email(user_email)
+            root.destroy()
+
+    return user_email
 def generate_password():
     pass_len = random.randint(10, 16)
     small_letters = list(string.ascii_lowercase)
@@ -134,6 +150,10 @@ def search_button_clicked():
 
 
 FONT_TUPLE = ("Courier", 12, "normal")
+
+my_email = load_email()
+print(my_email)
+
 
 window = Tk()
 window.title("Password Manager")
