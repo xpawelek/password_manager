@@ -8,3 +8,4 @@ A simple password manager built with **Python** and **Tkinter**.
 - **Search for saved credentials**
 - **Prevent weak passwords**
 - **Store user email with a startup prompt**
+- **Secure password storage with encryption**
