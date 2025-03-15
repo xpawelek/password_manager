@@ -180,19 +180,24 @@ def add_password(json_data, key):
     save_encrypted_data(existing_data, key)
 
 def search_button_clicked():
-    data_from_file = None
     try:
         data_from_file = load_encrypted_data(FERNET_KEY)
     except:
-        tkinter.messagebox.showinfo(title="Empty file", message="File don't have any input yet.")
+        tkinter.messagebox.showinfo(title="Empty file", message="File doesn't have any input yet.")
+        return
+
+    website = website_entry.get().lower()
+
+    if website in data_from_file:
+        found_accounts = data_from_file[website]
+
+        message = ""
+        for account in found_accounts:
+            message += f"Email: {account['email']}\nPassword: {account['password']}\n\n"
+
+        tkinter.messagebox.showinfo(title=website_entry.get().title(), message=message.strip())
     else:
-        if website_entry.get().lower() in data_from_file:
-            found_website = data_from_file[website_entry.get().lower()]
-            tkinter.messagebox.showinfo(title=website_entry.get().title(), message=f"Email: {found_website['email']}\nPassword: {found_website['password']}")
-        else:
-            tkinter.messagebox.showinfo(title="Fail", message=f"Website such as {website_entry.get()} has not been found.")
-
-
+        tkinter.messagebox.showinfo(title="Fail", message=f"Website '{website_entry.get()}' has not been found.")
 
 FONT_TUPLE = ("Courier", 12, "normal")
 
