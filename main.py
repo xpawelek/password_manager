@@ -7,8 +7,14 @@ import pyperclip
 import json
 import os
 from tkinter import simpledialog
+from cryptography.fernet import Fernet
+from dotenv import load_dotenv
+import base64
 
 EMAIL_FILE = "email.json"
+ENCRYPTED_FILE = "accounts_remembered.enc"
+load_dotenv()
+FERNET_KEY  = os.getenv("FERNET_KEY")
 
 def save_email(email):
     with open(EMAIL_FILE, "w") as file:
@@ -118,26 +124,65 @@ def add_button_clicked():
             tkinter.messagebox.showinfo(title="Success", message="Password has been added successfully")
 
         try:
-            with open("accounts_remembered.json", "r") as file:
-                data_from_file = json.load(file)
-                data_from_file.update(new_data)
+            add_password(json.dumps(new_data), FERNET_KEY)
+            added_succesed()
         except:
-            with open("accounts_remembered.json", "w") as file:
-                json.dump(new_data, file, indent=4)
-                added_succesed()
-        else:
-            with open("accounts_remembered.json", "w") as file:
-                json.dump(data_from_file, file, indent=4)
-                added_succesed()
+            print("some error")
 
     else:
         tkinter.messagebox.showerror(title="Error", message="Some errors has occured.")
 
+def generate_key():
+    key = Fernet.generate_key().decode()
+    with open(".env", "a") as env_file:
+        env_file.write(f"\nFERNET_KEY={key}")
+def load_encrypted_data(key):
+    cipher = Fernet(key)
+    if not os.path.exists(ENCRYPTED_FILE):
+        return {}  # Zwracamy pusty JSON, jeśli plik nie istnieje
+
+    try:
+        with open(ENCRYPTED_FILE, "rb") as file:
+            encrypted_data = file.read()
+            decrypted_data = cipher.decrypt(encrypted_data).decode()
+            return json.loads(decrypted_data)
+    except Exception as e:
+        print(f"Błąd odszyfrowywania pliku: {e}")
+        return {}
+
+def save_encrypted_data(data, key):
+    cipher = Fernet(key)
+    try:
+        json_string = json.dumps(data, indent=4)
+        encrypted_data = cipher.encrypt(json_string.encode())
+
+        with open(ENCRYPTED_FILE, "wb") as file:
+            file.write(encrypted_data)
+
+    except Exception as e:
+        print(f"Error while encrypting: {e}")
+
+def add_password(json_data, key):
+    try:
+        new_data = json.loads(json_data)
+    except json.JSONDecodeError:
+        print("Error: Invalid JSON format!")
+        return
+
+    existing_data = load_encrypted_data(key)
+
+    for service, accounts in new_data.items():
+        if service in existing_data:
+            existing_data[service].extend(accounts)
+        else:
+            existing_data[service] = accounts
+
+    save_encrypted_data(existing_data, key)
+
 def search_button_clicked():
     data_from_file = None
     try:
-        with open("accounts_remembered.json", "r") as file:
-            data_from_file = json.load(file)
+        data_from_file = load_encrypted_data(FERNET_KEY)
     except:
         tkinter.messagebox.showinfo(title="Empty file", message="File don't have any input yet.")
     else:
@@ -152,8 +197,9 @@ def search_button_clicked():
 FONT_TUPLE = ("Courier", 12, "normal")
 
 my_email = load_email()
-print(my_email)
 
+if not (os.path.exists(r".\.env") and os.path.getsize(r".\.env") > 0):
+    generate_key()
 
 window = Tk()
 window.title("Password Manager")
